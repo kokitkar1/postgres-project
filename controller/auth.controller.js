@@ -1,5 +1,6 @@
 const user = require("../db/models/user.js");
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 
 const generateToken = (payload) => {
     return jwt.sign(payload,process.env.JWT_SECRET_KEY , {
@@ -50,6 +51,46 @@ const signup = async (req,res,next) => {
     })
 }
 
+const login =async (req,res,next) => {
+    const {email, password} = req.body
 
-module.exports = {signup}
+    if(!email || !password) {
+        return res.status(400).json({
+            status: "fail",
+            message: 'please provide email and password'
+        })
+    }
+
+    const result =await user.findOne({ where: {email}});
+    if(!result || !(bcrypt.compareSync(password, result.password))) {
+        return res.status(401).json({
+            status: 'fail',
+            message: 'Incorrect email or Password'
+        })
+    }
+
+    // const isPasswordMatched = bcrypt.compareSync(password, result.password)
+    // if(!isPasswordMatched) {
+    //    return  res.status(401).json({
+    //         status: 'fail',
+    //         message: 'Incorrect email or Password'
+    //     })
+    // }
+
+    const token = generateToken({
+        id:result.id
+    })
+
+    return res.status(200).json({
+        status: 'success',
+        token
+    })
+
+
+
+
+}
+
+
+module.exports = {signup, login}
 
